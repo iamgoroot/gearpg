@@ -11,8 +11,8 @@ import (
 
 type (
 	GeaRPG struct {
-		DB *pg.DB
-		GB gearbox.Gearbox
+		Gear gearbox.Gearbox
+		PG   *pg.DB
 	}
 	Endpoint struct {
 		//mount path
@@ -33,26 +33,26 @@ type (
 
 func (m GeaRPG) With(options ...*Endpoint) {
 	for _, opt := range options {
-		m.GB.Post(opt.Route, func(g gearbox.Context) {
-			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) && safe(g, m.DB.Insert(model)) {
+		m.Gear.Post(opt.Route, func(g gearbox.Context) {
+			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) && safe(g, m.PG.Insert(model)) {
 				safe(g, g.Status(http.StatusCreated).SendJSON(model))
 			}
 		})
-		m.GB.Get(opt.Route, func(g gearbox.Context) {
+		m.Gear.Get(opt.Route, func(g gearbox.Context) {
 			models := opt.MakeSlice()
-			query, err := prepareQuery(m.DB, g, models, opt)
+			query, err := prepareQuery(m.PG, g, models, opt)
 			_ = safe(g, err) && safe(g, query.Select()) && safe(g, g.SendJSON(models))
 		})
-		m.GB.Delete(opt.Route, func(g gearbox.Context) {
-			if query, err := prepareQuery(m.DB, g, opt.MakeOne(), opt); safe(g, err) {
+		m.Gear.Delete(opt.Route, func(g gearbox.Context) {
+			if query, err := prepareQuery(m.PG, g, opt.MakeOne(), opt); safe(g, err) {
 				if res, err := query.Delete(); safe(g, err) {
 					safe(g, g.SendJSON(mutation{res.RowsAffected()}))
 				}
 			}
 		})
-		m.GB.Patch(opt.Route, func(g gearbox.Context) {
+		m.Gear.Patch(opt.Route, func(g gearbox.Context) {
 			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) {
-				if query, err := prepareQuery(m.DB, g, model, opt); safe(g, err) {
+				if query, err := prepareQuery(m.PG, g, model, opt); safe(g, err) {
 					if res, err := query.Update(); safe(g, err) {
 						safe(g, g.SendJSON(mutation{res.RowsAffected()}))
 					}
