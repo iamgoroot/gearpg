@@ -8,6 +8,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/timsolov/rest-query-parser v1.9.4
 	mellium.im/sasl v0.2.1 // indirect
 )

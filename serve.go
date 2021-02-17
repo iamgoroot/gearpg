@@ -65,10 +65,13 @@ func (m GeaRPG) With(options ...*Endpoint) {
 func prepareQuery(db *pg.DB, g gearbox.Context, model interface{}, options *Endpoint) (q *orm.Query, err error) {
 	url := string(g.Context().Request.RequestURI())
 	query := rqp.New().SetValidations(options.Validations)
-	if safe(g, query.SetUrlString(url)) {
-		query.ReplaceNames(options.Replacer)
-		if safe(g, query.Parse()) {
-			q = db.Model(model).Where(query.Where(), query.Args()...).Limit(query.Limit).Offset(query.Offset)
+	if err = query.SetUrlString(url); err == nil {
+		if err = query.Parse(); err == nil {
+			query.ReplaceNames(options.Replacer)
+			q = db.Model(model).Limit(query.Limit).Offset(query.Offset)
+			if where := query.Where(); where != "" {
+				q.Where(where, query.Args()...)
+			}
 			for _, sort := range query.Sorts {
 				if sort.Desc {
 					q.OrderExpr("? DESC", types.F(sort.By))
