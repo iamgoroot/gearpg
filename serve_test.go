@@ -2,9 +2,10 @@ package gearpg
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/v11"
 	"github.com/gogearbox/gearbox"
 	"github.com/stretchr/testify/assert"
 	rqp "github.com/timsolov/rest-query-parser"
@@ -21,14 +22,15 @@ type MaTableModel struct {
 }
 
 func TestGeaRPG_With(t *testing.T) {
+	background := context.Background()
 	app := &GeaRPG{Gear: gearbox.New(), PG: pg.Connect(&pg.Options{
 		User:     "test",
 		Password: "test",
 		Database: "test",
 		Addr:     "db:5432",
 	})}
-	defer app.PG.Close()
-	_ = app.PG.Model((*MaTableModel)(nil)).CreateTable(nil)
+	defer app.PG.Close(background)
+	_ = app.PG.Model((*MaTableModel)(nil)).CreateTable(background, nil)
 
 	app.With(
 		&Endpoint{

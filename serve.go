@@ -1,9 +1,9 @@
 package gearpg
 
 import (
-	"github.com/go-pg/pg"
-	"github.com/go-pg/pg/orm"
-	"github.com/go-pg/pg/types"
+	pg "github.com/go-pg/pg/v11"
+	"github.com/go-pg/pg/v11/orm"
+	"github.com/go-pg/pg/v11/types"
 	"github.com/gogearbox/gearbox"
 	rqp "github.com/timsolov/rest-query-parser"
 	"net/http"
@@ -34,18 +34,20 @@ type (
 func (m GeaRPG) With(options ...*Endpoint) {
 	for _, opt := range options {
 		m.Gear.Post(opt.Route, func(g gearbox.Context) {
-			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) && safe(g, m.PG.Insert(model)) {
-				safe(g, g.Status(http.StatusCreated).SendJSON(model))
+			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) {
+				if _, err := m.PG.Model(model).Insert(g.Context()); safe(g, err) {
+					safe(g, g.Status(http.StatusCreated).SendJSON(model))
+				}
 			}
 		})
 		m.Gear.Get(opt.Route, func(g gearbox.Context) {
 			models := opt.MakeSlice()
 			query, err := prepareQuery(m.PG, g, models, opt)
-			_ = safe(g, err) && safe(g, query.Select()) && safe(g, g.SendJSON(models))
+			_ = safe(g, err) && safe(g, query.Select(g.Context())) && safe(g, g.SendJSON(models))
 		})
 		m.Gear.Delete(opt.Route, func(g gearbox.Context) {
 			if query, err := prepareQuery(m.PG, g, opt.MakeOne(), opt); safe(g, err) {
-				if res, err := query.Delete(); safe(g, err) {
+				if res, err := query.Delete(g.Context()); safe(g, err) {
 					safe(g, g.SendJSON(mutation{res.RowsAffected()}))
 				}
 			}
@@ -53,7 +55,7 @@ func (m GeaRPG) With(options ...*Endpoint) {
 		m.Gear.Patch(opt.Route, func(g gearbox.Context) {
 			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) {
 				if query, err := prepareQuery(m.PG, g, model, opt); safe(g, err) {
-					if res, err := query.Update(); safe(g, err) {
+					if res, err := query.Update(g.Context()); safe(g, err) {
 						safe(g, g.SendJSON(mutation{res.RowsAffected()}))
 					}
 				}
@@ -74,7 +76,7 @@ func prepareQuery(db *pg.DB, g gearbox.Context, model interface{}, options *Endp
 			}
 			for _, sort := range query.Sorts {
 				if sort.Desc {
-					q.OrderExpr("? DESC", types.F(sort.By))
+					q.OrderExpr("? DESC", types.Ident(sort.By))
 				} else {
 					q.Order(sort.By)
 				}
