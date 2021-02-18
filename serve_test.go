@@ -25,6 +25,7 @@ func TestGeaRPG_With(t *testing.T) {
 		User:     "test",
 		Password: "test",
 		Database: "test",
+		Addr:     "db:5432",
 	})}
 	defer app.PG.Close()
 	_ = app.PG.Model((*MaTableModel)(nil)).CreateTable(nil)
@@ -90,7 +91,7 @@ func update() {
 		SomeKey:     "updated key",
 		Description: "find me",
 	})
-	req, err := http.NewRequest(http.MethodPatch, "http://localhost:1234/crud-name?id[eq]=1", bytes.NewBuffer(data))
+	req, err := http.NewRequest(http.MethodPatch, "http://test:1234/crud-name?id[eq]=1", bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		panic(err)
@@ -102,7 +103,7 @@ func update() {
 }
 
 func read(q string) int {
-	get, err := http.Get("http://localhost:1234/crud-name" + q)
+	get, err := http.Get("http://test:1234/crud-name" + q)
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +114,7 @@ func read(q string) int {
 }
 
 func delete(q string) {
-	req, err := http.NewRequest(http.MethodDelete, "http://localhost:1234/crud-name"+q, nil)
+	req, err := http.NewRequest(http.MethodDelete, "http://test:1234/crud-name"+q, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -132,7 +133,7 @@ func create() {
 			SomeKey:     fmt.Sprintf("key[%s]", letters[:i%len(letters)]),
 			Description: fmt.Sprintf("descriptions %s", letters[:i%len(letters)]),
 		})
-		_, err := http.Post("http://localhost:1234/crud-name", "application/json", bytes.NewBuffer(data))
+		_, err := http.Post("http://test:1234/crud-name", "application/json", bytes.NewBuffer(data))
 		if err != nil {
 			panic(err)
 		}
