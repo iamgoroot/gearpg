@@ -1,12 +1,11 @@
 package gearpg
 
 import (
-	pg "github.com/go-pg/pg/v11"
+	"github.com/go-pg/pg/v11"
 	"github.com/go-pg/pg/v11/orm"
 	"github.com/go-pg/pg/v11/types"
 	"github.com/gogearbox/gearbox"
 	rqp "github.com/timsolov/rest-query-parser"
-	"net/http"
 )
 
 type (
@@ -33,34 +32,10 @@ type (
 
 func (m GeaRPG) With(options ...*Endpoint) {
 	for _, opt := range options {
-		m.Gear.Post(opt.Route, func(g gearbox.Context) {
-			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) {
-				if _, err := m.PG.Model(model).Insert(g.Context()); safe(g, err) {
-					safe(g, g.Status(http.StatusCreated).SendJSON(model))
-				}
-			}
-		})
-		m.Gear.Get(opt.Route, func(g gearbox.Context) {
-			models := opt.MakeSlice()
-			query, err := prepareQuery(m.PG, g, models, opt)
-			_ = safe(g, err) && safe(g, query.Select(g.Context())) && safe(g, g.SendJSON(models))
-		})
-		m.Gear.Delete(opt.Route, func(g gearbox.Context) {
-			if query, err := prepareQuery(m.PG, g, opt.MakeOne(), opt); safe(g, err) {
-				if res, err := query.Delete(g.Context()); safe(g, err) {
-					safe(g, g.SendJSON(mutation{res.RowsAffected()}))
-				}
-			}
-		})
-		m.Gear.Patch(opt.Route, func(g gearbox.Context) {
-			if model := opt.MakeOne(); safe(g, g.ParseBody(model)) {
-				if query, err := prepareQuery(m.PG, g, model, opt); safe(g, err) {
-					if res, err := query.Update(g.Context()); safe(g, err) {
-						safe(g, g.SendJSON(mutation{res.RowsAffected()}))
-					}
-				}
-			}
-		})
+		m.Gear.Post(opt.Route, m.post(opt))
+		m.Gear.Get(opt.Route, m.get(opt))
+		m.Gear.Delete(opt.Route, m.delete(opt))
+		m.Gear.Patch(opt.Route, m.patch(opt))
 	}
 }
 
